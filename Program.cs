@@ -6,16 +6,7 @@ builder.Services.AddControllers();
 // Learn more about configuring Swagger/OpenAPI at https://aka.ms/aspnetcore/swashbuckle
 builder.Services.AddEndpointsApiExplorer();
 builder.Services.AddSwaggerGen();
-
-var allowedOrigins = builder.Configuration.GetValue<string>("allowedOrigins")!.Split(',');
-
-builder.Services.AddCors(options =>
-{
-    options.AddDefaultPolicy(policy =>
-    {
-        policy.WithOrigins("allowedOrigins").AllowAnyHeader().AllowAnyMethod();
-    });
-});
+builder.Services.AddHttpClient<CurrencyConvertService>();
 
 var app = builder.Build();
 
@@ -28,6 +19,8 @@ if (app.Environment.IsDevelopment())
 
 app.UseHttpsRedirection();
 
+app.UseDefaultFiles();
+app.UseStaticFiles();
 app.UseCors();
 
 app.UseAuthorization();
