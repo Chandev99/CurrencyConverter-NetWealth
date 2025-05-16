@@ -6,6 +6,7 @@ using Microsoft.Extensions.Configuration;
 using CurrencyConverter.Dtos;
 using CurrencyConverter.Models;
 
+namespace CurrencyConverter.Services;
 public class CurrencyConvertService
 {
     private readonly HttpClient _httpClient;
