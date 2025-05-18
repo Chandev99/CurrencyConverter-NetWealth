@@ -3,7 +3,7 @@
 /tmp
 /out-tsc
 /bazel-out
-/node_modules
+WebApp/node_modules
 npm-debug.log
 yarn-error.log
 WebApp/.angular/cache

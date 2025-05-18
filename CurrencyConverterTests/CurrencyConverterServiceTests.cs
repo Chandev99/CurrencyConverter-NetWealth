@@ -11,14 +11,14 @@ using System.Text.Json;
 using Microsoft.Extensions.Configuration;
 using CurrencyConverter.Services;
 
-namespace CurrencyConvertServiceTests;
+namespace CurrencyConverter.CurrencyConverterServiceTests;
 
 [TestFixture]
-public class CurrencyConvertServiceTests
+public class CurrencyConverterServiceTests
 {
     private Mock<HttpMessageHandler> _handlerMock;
     private HttpClient _httpClient;
-    private CurrencyConvertService _service;
+    private CurrencyConverterService _service;
     private Mock<IConfiguration> _configMock;
 
     [SetUp]
@@ -29,7 +29,7 @@ public class CurrencyConvertServiceTests
         _configMock = new Mock<IConfiguration>();
         _configMock.Setup(c => c["CurrencyConvertApiKey"]).Returns("test-api-key");
 
-        _service = new CurrencyConvertService(_httpClient, _configMock.Object);
+        _service = new CurrencyConverterService(_httpClient, _configMock.Object);
     }
 
     [Test]
@@ -56,7 +56,7 @@ public class CurrencyConvertServiceTests
             .Protected()
             .Setup<Task<HttpResponseMessage>>(
                 "SendAsync",
-                ItExpr.IsAny<HttpRequestMessage>(),
+                ItExpr.Is<HttpRequestMessage>(req => req.RequestUri.ToString().Contains("convert")),
                 ItExpr.IsAny<CancellationToken>())
             .ReturnsAsync(response);
 
@@ -64,11 +64,89 @@ public class CurrencyConvertServiceTests
         var result = await _service.ConvertCurrencyAsync("GBP", "USD", 500);
 
         // Assert
-        Assert.AreEqual("GBP", result.BaseCurrencyIso);
-        Assert.AreEqual(1.5, result.ExchangeRate);
-        Assert.AreEqual(750, result.ResultAmount);
-        Assert.AreEqual("now", result.RequestedTime);
+        Assert.IsNotNull(result);
+
+        Assert.That(result.BaseCurrencyIso, Is.EqualTo("GBP"));
+        Assert.That(result.ExchangeRate, Is.EqualTo(1.5));
+        Assert.That(result.ResultAmount, Is.EqualTo(750));
+        Assert.That(result.RequestedTime, Is.EqualTo("now"));
     }
+
+    [Test]
+    public void ConvertCurrencyAsync_WhenHttpRequestFails_ThrowsException()
+    {
+        // Arrange
+        _handlerMock
+            .Protected()
+            .Setup<Task<HttpResponseMessage>>(
+                "SendAsync",
+                ItExpr.Is<HttpRequestMessage>(req => req.RequestUri.ToString().Contains("convert")),
+                ItExpr.IsAny<CancellationToken>())
+            .ThrowsAsync(new HttpRequestException("Network failure"));
+
+        // Act & Assert
+        var ex = Assert.ThrowsAsync<Exception>(async () => await _service.ConvertCurrencyAsync("GBP", "USD", 500));
+        Assert.That(ex.Message, Is.EqualTo("Error converting amount via API."));
+    }
+
+    [Test]
+    public async Task GetCurrenciesAsync_ReturnsExpectedCurrencyList()
+    {
+        // Arrange
+        var mockCurrencyModel = new CurrencyModel
+        {
+            AvailableCurrencies = new Dictionary<string, string>
+            {
+                { "GBP", "British Pound" },
+                { "USD", "US Dollar" }
+            }
+        };
+
+        var response = new HttpResponseMessage
+        {
+            StatusCode = HttpStatusCode.OK,
+            Content = new StringContent(JsonSerializer.Serialize(mockCurrencyModel))
+        };
+
+        _handlerMock
+            .Protected()
+            .Setup<Task<HttpResponseMessage>>(
+                "SendAsync",
+                ItExpr.Is<HttpRequestMessage>(req => req.RequestUri.ToString().Contains("live_currencies_list")),
+                ItExpr.IsAny<CancellationToken>())
+            .ReturnsAsync(response);
+
+        // Act
+        var result = await _service.GetCurrenciesAsync();
+
+        // Assert
+        Assert.IsNotNull(result);
+        Assert.That(result.Count, Is.EqualTo(2));
+
+        var gbp = result.FirstOrDefault(c => c.ISO == "GBP");
+        Assert.That(gbp.CurrencyName, Is.EqualTo("British Pound"));
+
+        var usd = result.FirstOrDefault(c => c.ISO == "USD");
+        Assert.That(usd.CurrencyName, Is.EqualTo("US Dollar"));
+    }
+
+    [Test]
+    public void GetCurrenciesAsync_WhenHttpRequestFails_ThrowsException()
+    {
+        // Arrange
+        _handlerMock
+            .Protected()
+            .Setup<Task<HttpResponseMessage>>(
+                "SendAsync",
+                ItExpr.Is<HttpRequestMessage>(req => req.RequestUri.ToString().Contains("live_currencies_list")),
+                ItExpr.IsAny<CancellationToken>())
+            .ThrowsAsync(new HttpRequestException("Network failure"));
+
+        // Act & Assert
+        var ex = Assert.ThrowsAsync<Exception>(async () => await _service.GetCurrenciesAsync());
+        Assert.That(ex.Message, Is.EqualTo("Error fetching Currencies List from API."));
+    }
+
 
     [TearDown]
     public void TearDown()

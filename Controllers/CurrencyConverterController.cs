@@ -8,9 +8,9 @@ namespace CurrencyConverter.Controllers
     {
 
         private readonly ILogger<CurrencyConverterController> _logger;
-        private readonly CurrencyConvertService _currencyService;
+        private readonly CurrencyConverterService _currencyService;
 
-        public CurrencyConverterController(ILogger<CurrencyConverterController> logger, CurrencyConvertService currencyService)
+        public CurrencyConverterController(ILogger<CurrencyConverterController> logger, CurrencyConverterService currencyService)
         {
             _logger = logger;
             _currencyService = currencyService;
