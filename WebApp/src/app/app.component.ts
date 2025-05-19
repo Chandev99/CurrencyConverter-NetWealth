@@ -1,6 +1,6 @@
 import { Component, OnInit } from '@angular/core';
 import { CurrencyConverterService } from './currency-converter.service';
-import { Currency } from 'src/models/currency-model'; // ✔ Correct model import
+import { Currency } from 'src/models/currency-model';
 import { ConversionResult } from 'src/models/converted-result-model';
 
 @Component({
