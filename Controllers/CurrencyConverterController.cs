@@ -19,7 +19,6 @@ namespace CurrencyConverter.Controllers
         [HttpGet("currencies")]
         public async Task<IActionResult> GetCurrencies()
         {
-            //return Ok();
             var currencies = await _currencyService.GetCurrenciesAsync();
             return Ok(currencies);
         }
